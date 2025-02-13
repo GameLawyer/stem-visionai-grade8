@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 40px;
+        }
+        #uploadBtn {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Upload an Image</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="uploadBtn">Upload & Classify</button>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById("uploadBtn").addEventListener("click", async function() {
+            const fileInput = document.getElementById("imageInput");
+            if (!fileInput.files.length) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onloadend = async function() {
+                const imageBase64 = reader.result.split(',')[1]; // Convert image to Base64 format
+
+                try {
+                    const response = await fetch('https://detect.roboflow.com/infer/workflows/stem-project/custom-workflow', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            api_key: 'IyMGdWwLsLeeJBBpkuq8',
+                            inputs: { "image": { "type": "base64", "value": imageBase64 } }
+                        })
+                    });
+
+                    const result = await response.json();
+                    console.log(result);
+					const predictions = result.outputs[0].predictions.predictions;
+                    console.log(predictions);
+
+                    if (predictions && predictions.length > 0) {
+                        document.getElementById("result").innerText = 
+                            `Prediction: ${predictions[0].class}`;
+                    } else {
+                        document.getElementById("result").innerText = "No objects detected.";
+                    }
+
+                } catch (error) {
+                    console.error("Error:", error);
+                    document.getElementById("result").innerText = "Error processing image.";
+                }
+            };
+
+            reader.readAsDataURL(file);
+        });
+    </script>
+
+</body>
+</html>
